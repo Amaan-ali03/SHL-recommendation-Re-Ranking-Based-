@@ -24,7 +24,7 @@
 <body>
   <div class="card">
     <h1>SHL Assessment Recommender — Demo</h1>
-    <div class="small">Enter a short query or paste a job description. Results will call the backend at <code id="backendUrl">http://127.0.0.1:8000/recommend</code>.</div>
+    <div class="small">Enter a short query or paste a job description. Results will call the backend.</div>
 
     <label for="query">Query / Job Description</label>
     <textarea id="query" placeholder="e.g. Hiring a Java developer who collaborates with stakeholders (40 minutes)"></textarea>
@@ -47,7 +47,7 @@
   <footer>To serve this page locally run: <code>python -m http.server --directory src/frontend 3000</code> and open <a href="http://127.0.0.1:3000/index.html">http://127.0.0.1:3000/index.html</a></footer>
 
 <script>
-const BACKEND = 'http://127.0.0.1:8000/recommend'; // change if you deploy backend elsewhere
+const BACKEND = 'http://shl-recommendation-re-ranking-based-xbrp.onrender.com/recommend'; // change if you deploy backend elsewhere
 document.getElementById('backendUrl').textContent = BACKEND;
 
 const runBtn = document.getElementById('run');
