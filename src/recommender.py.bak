@@ -1,0 +1,159 @@
+"""
+Recommender class with optional Cross-Encoder.
+If the 'cross-encoder' package is not available, this falls back to a bi-encoder only pipeline.
+"""
+import json, re, numpy as np, httpx, os
+from sentence_transformers import SentenceTransformer
+from rapidfuzz import fuzz
+
+# Try to import CrossEncoder (not always installable on all systems)
+try:
+    from cross_encoder import CrossEncoder  # if installed as cross-encoder package
+    CROSS_AVAILABLE = True
+except Exception:
+    try:
+        # Some installs expose CrossEncoder in sentence_transformers.cross_encoder (older layouts)
+        from sentence_transformers.cross_encoder import CrossEncoder
+        CROSS_AVAILABLE = True
+    except Exception:
+        CrossEncoder = None
+        CROSS_AVAILABLE = False
+
+INDEX_ITEMS = "src/index/items.json"
+INDEX_EMBS = "src/index/embeddings.npy"
+
+TYPE_MAP = {
+    "A":"Ability & Aptitude","B":"Biodata & Situational Judgement","C":"Competencies",
+    "D":"Development & 360","E":"Assessment Exercises","K":"Knowledge & Skills",
+    "P":"Personality & Behavior","S":"Simulations"
+}
+
+class Recommender:
+    def __init__(self, bi_model_name="sentence-transformers/all-MiniLM-L6-v2",
+                 cross_model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        if not os.path.exists(INDEX_ITEMS) or not os.path.exists(INDEX_EMBS):
+            raise FileNotFoundError("Index files missing. Run src.build_index first.")
+        with open(INDEX_ITEMS, "r", encoding="utf-8") as f:
+            self.items = json.load(f)
+        self.emb = np.load(INDEX_EMBS)
+        # bi-encoder (always available)
+        self.bi = SentenceTransformer(bi_model_name)
+        # cross-encoder is optional
+        self.reranker = None
+        if CROSS_AVAILABLE:
+            try:
+                self.reranker = CrossEncoder(cross_model_name)
+                print("Cross-encoder loaded.")
+            except Exception as e:
+                # if loading fails, continue without it
+                print("Cross-encoder import ok but failed to load model:", e)
+                self.reranker = None
+        else:
+            print("Cross-encoder NOT available; running in bi-encoder fallback mode.")
+
+    def _fetch_url_text(self, url: str) -> str:
+        try:
+            with httpx.Client(timeout=20.0, follow_redirects=True) as client:
+                r = client.get(url)
+                html = r.text
+        except Exception:
+            return ""
+        txt = re.sub(r"<script.*?</script>", " ", html, flags=re.S|re.I)
+        txt = re.sub(r"<style.*?</style>", " ", txt, flags=re.S|re.I)
+        txt = re.sub(r"<[^>]+>", " ", txt)
+        txt = re.sub(r"\s+", " ", txt).strip()
+        return txt[:10000]
+
+    def _guess_types(self, text: str):
+        t = (text or "").lower()
+        wants = set()
+        if re.search(r"\b(java(script)?|python|sql|react|node|c\+\+|aws|docker|kubernetes|devops|engineer|developer|programming)\b", t):
+            wants.add("K")
+        if re.search(r"\b(collaborat|stakeholder|communication|teamwork|leadership|behaviour|behavior|personality)\b", t):
+            wants.add("P")
+        if re.search(r"\b(numerical|verbal|abstract|reasoning|aptitude|cognitive|ability)\b", t):
+            wants.add("A")
+        if re.search(r"\b(simulation|simulations|scenario)\b", t):
+            wants.add("S")
+        if re.search(r"\b(competenc|competency)\b", t):
+            wants.add("C")
+        if not wants:
+            if re.search(r"\b(dev|engineer|developer|analyst|data)\b", t):
+                wants.add("K")
+            else:
+                wants.add("P")
+        return list(wants)
+
+    def _balance(self, cands, wanted_types, k):
+        if not wanted_types or k <= 0:
+            return cands[:k]
+        per = max(1, k // len(wanted_types))
+        out = []
+        used_urls = set()
+        buckets = {tt:[c for c in cands if c.get("test_type")==tt] for tt in wanted_types}
+        done = False
+        while len(out) < k and not done:
+            done = True
+            for tt in wanted_types:
+                lst = buckets.get(tt, [])
+                if not lst:
+                    continue
+                done = False
+                while lst and len(out) < k:
+                    cand = lst.pop(0)
+                    if cand["url"] in used_urls:
+                        continue
+                    out.append(cand); used_urls.add(cand["url"])
+                    break
+        for cand in cands:
+            if len(out) >= k: break
+            if cand["url"] in used_urls: continue
+            out.append(cand); used_urls.add(cand["url"])
+        return out[:k]
+
+    def recommend(self, query: str = None, jd_url: str = None, k: int = 10):
+        if jd_url and not query:
+            query = self._fetch_url_text(jd_url) or jd_url
+        if not query:
+            raise ValueError("Provide a query or jd_url")
+        q_emb = self.bi.encode([query], normalize_embeddings=True)[0]
+        sims = (self.emb @ q_emb)
+        topk = min(len(sims), max(20, k*8))
+        idxs = np.argsort(-sims)[:topk]
+        cands = []
+        for i in idxs:
+            it = dict(self.items[i])
+            it["_sim"] = float(sims[i])
+            kw = fuzz.partial_ratio(query.lower(), (it.get("name","")+" "+(it.get("description") or "")).lower())/100.0
+            it["_pre_score"] = it["_sim"] + 0.05*kw
+            cands.append(it)
+
+        if self.reranker is not None:
+            # Cross-encoder reranking path
+            pairs = [(query, c["_embed_text"]) if "_embed_text" in c else (query, (c.get("name","")+" "+(c.get("description") or ""))) for c in cands]
+            ce_scores = self.reranker.predict(pairs)
+            for c,s in zip(cands, ce_scores):
+                c["_ce"] = float(s)
+                c["_final"] = 0.90*(c["_ce"]/10.0) + 0.10*c["_pre_score"]
+            cands.sort(key=lambda x: x["_final"], reverse=True)
+        else:
+            # Fallback: sort by the pre_score (bi-encoder + fuzzy)
+            cands.sort(key=lambda x: x["_pre_score"], reverse=True)
+
+        wanted = self._guess_types(query)
+        out = self._balance(cands, wanted, k)
+        results = []
+        for r in out:
+            results.append({
+                "assessment_name": r.get("name"),
+                "url": r.get("url"),
+                "test_type": r.get("test_type"),
+                "assessment_length_min": r.get("assessment_length_min"),
+                "languages": r.get("languages", [])
+            })
+        return results
+
+if __name__ == "__main__":
+    rec = Recommender()
+    print("Loaded items:", len(rec.items))
+    print(rec.recommend(query="Hiring a Java developer who collaborates with stakeholders", k=6))

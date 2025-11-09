@@ -1,0 +1,5 @@
+Cross-encoder loaded.
+Running normalized evaluation on 10 queries...
+Mean Recall@10 (Baseline - normalized): 0.1611
+Mean Recall@10 (Improved - normalized): 0.2422
+Wrote normalized submissions and src/eval_results.json

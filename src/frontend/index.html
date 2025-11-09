@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SHL Recommender — Demo</title>
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:24px;background:#f7f8fb;color:#0f172a}
+    .card{max-width:900px;margin:24px auto;padding:20px;background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
+    h1{margin:0 0 8px;font-size:20px}
+    label{display:block;margin-top:12px;font-weight:600}
+    textarea{width:100%;height:110px;padding:10px;border-radius:8px;border:1px solid #e6eef8;background:#fbfdff}
+    input[type=text], input[type=number]{width:140px;padding:8px;border-radius:8px;border:1px solid #e6eef8}
+    button{margin-top:12px;padding:10px 16px;border-radius:10px;border:0;background:#0b63ff;color:#fff;cursor:pointer}
+    .results{margin-top:18px}
+    .item{padding:12px;border-radius:8px;border:1px solid #eef3ff;margin-bottom:10px;background:#fbfdff}
+    .meta{color:#475569;font-size:13px}
+    .small{font-size:13px;color:#64748b}
+    .spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(0,0,0,0.08);border-left-color:#0b63ff;border-radius:50%;animation:spin 1s linear infinite;margin-left:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    footer{max-width:900px;margin:12px auto;text-align:center;color:#64748b;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>SHL Assessment Recommender — Demo</h1>
+    <div class="small">Enter a short query or paste a job description. Results will call the backend at <code id="backendUrl">http://127.0.0.1:8000/recommend</code>.</div>
+
+    <label for="query">Query / Job Description</label>
+    <textarea id="query" placeholder="e.g. Hiring a Java developer who collaborates with stakeholders (40 minutes)"></textarea>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+      <div>
+        <label for="k">k (results)</label>
+        <input id="k" type="number" value="6" min="1" max="10" />
+      </div>
+      <div style="margin-left:8px">
+        <label>&nbsp;</label>
+        <button id="run">Recommend</button>
+      </div>
+      <div style="margin-left:auto" id="status"></div>
+    </div>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <footer>To serve this page locally run: <code>python -m http.server --directory src/frontend 3000</code> and open <a href="http://127.0.0.1:3000/index.html">http://127.0.0.1:3000/index.html</a></footer>
+
+<script>
+const BACKEND = 'http://127.0.0.1:8000/recommend'; // change if you deploy backend elsewhere
+document.getElementById('backendUrl').textContent = BACKEND;
+
+const runBtn = document.getElementById('run');
+const status = document.getElementById('status');
+const resultsEl = document.getElementById('results');
+
+runBtn.addEventListener('click', async ()=>{
+  const q = document.getElementById('query').value.trim();
+  const k = parseInt(document.getElementById('k').value||6,10);
+  resultsEl.innerHTML = '';
+  if(!q){ alert('Please provide a query or job description'); return }
+  status.innerHTML = '<span class="small">querying...</span><span class="spinner"></span>'
+  try{
+    const resp = await fetch(BACKEND,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query: q, k: k})
+    });
+    if(!resp.ok){ const t=await resp.text(); throw new Error(resp.status+' '+t) }
+    const j = await resp.json();
+    const list = j.results || [];
+    if(list.length===0){ resultsEl.innerHTML = '<div class="small">No results found.</div>' }
+    for(const it of list){
+      const node = document.createElement('div'); node.className='item';
+      const title = document.createElement('div'); title.innerHTML = `<strong>${escapeHtml(it.assessment_name||'Untitled')}</strong>`;
+      const link = document.createElement('div'); link.innerHTML = `<a href="${escapeHtml(it.url)}" target="_blank">Open assessment</a> — <span class="meta">Type: ${escapeHtml(it.test_type||'N/A')} • Length: ${escapeHtml(it.assessment_length_min||'N/A')} min</span>`;
+      node.appendChild(title); node.appendChild(link);
+      resultsEl.appendChild(node);
+    }
+  }catch(err){
+    resultsEl.innerHTML = '<div class="small" style="color:#b91c1c">Error: '+escapeHtml(err.message)+'</div>'
+  }finally{ status.innerHTML=''; }
+});
+
+function escapeHtml(s){ return String(s).replace(/[&\"<>]/g, c=>({ '&':'&amp;','\"':'&quot;','<':'&lt;','>':'&gt;' }[c])) }
+</script>
+</body>
+</html>
