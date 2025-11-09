@@ -39,8 +39,8 @@ train_df = pd.read_excel(xls, sheet_name="Train-Set")
 test_df = pd.read_excel(xls, sheet_name="Test-Set")
 
 # load items & index
-items = json.load(open("src/index/items.json", "r", encoding="utf-8"))
-embs = np.load("src/index/embeddings.npy")
+items = json.load(open("index/items.json", "r", encoding="utf-8"))
+embs = np.load("index/embeddings.npy")
 
 # build name -> canonical url map from catalog
 name_to_url = {}
@@ -150,7 +150,7 @@ for q in queries:
         "baseline_preds": preds_base[q],
         "improved_preds": preds_imp[q]
     })
-with open("src/eval_results.json", "w", encoding="utf-8") as f:
+with open("eval_results.json", "w", encoding="utf-8") as f:
     json.dump(eval_record, f, ensure_ascii=False, indent=2)
 
 # write submission CSVs for Test-Set (normalized)
@@ -162,7 +162,7 @@ for q in test_queries:
     for p in improved_recommend(q, k=10):
         rows_imp.append({"Query": q, "Assessment_url": p["url"]})
 
-pd.DataFrame(rows_base, columns=["Query","Assessment_url"]).to_csv("src/submission_baseline.csv", index=False)
-pd.DataFrame(rows_imp, columns=["Query","Assessment_url"]).to_csv("src/submission_improved.csv", index=False)
+pd.DataFrame(rows_base, columns=["Query","Assessment_url"]).to_csv("submission_baseline.csv", index=False)
+pd.DataFrame(rows_imp, columns=["Query","Assessment_url"]).to_csv("submission_improved.csv", index=False)
 
-print("Wrote normalized submissions and src/eval_results.json")
+print("Wrote normalized submissions and eval_results.json")

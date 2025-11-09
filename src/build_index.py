@@ -6,8 +6,8 @@ import os, json, numpy as np
 import re
 from sentence_transformers import SentenceTransformer
 
-IN_PATH = "src/index/catalog_individual.json"
-OUT_DIR = "src/index"
+IN_PATH = "index/catalog_individual.json"
+OUT_DIR = "index"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 def _clean_text(s: str) -> str:

@@ -32,8 +32,8 @@ for _mod in ("cross_encoder", "sentence_transformers.cross_encoder"):
     except Exception:
         continue
 
-INDEX_ITEMS = "src/index/items.json"
-INDEX_EMBS = "src/index/embeddings.npy"
+INDEX_ITEMS = "index/items.json"
+INDEX_EMBS = "index/embeddings.npy"
 
 TYPE_MAP = {
     "A": "Ability & Aptitude", "B": "Biodata & Situational Judgement", "C": "Competencies",

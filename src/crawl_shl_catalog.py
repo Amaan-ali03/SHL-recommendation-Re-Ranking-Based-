@@ -183,10 +183,10 @@ def crawl(start_url=CATALOG_URL, max_pages=200):
         if (i+1) % 20 == 0:
             print("  fetched", i+1, "details...")
         time.sleep(0.4)
-    os.makedirs("src/index", exist_ok=True)
-    with open("src/index/catalog_individual.json","w",encoding="utf-8") as f:
+    os.makedirs("index", exist_ok=True)
+    with open("index/catalog_individual.json","w",encoding="utf-8") as f:
         json.dump(enriched, f, ensure_ascii=False, indent=2)
-    print("Saved", len(enriched), "items to src/index/catalog_individual.json")
+    print("Saved", len(enriched), "items to index/catalog_individual.json")
 
 if __name__ == "__main__":
     crawl()
