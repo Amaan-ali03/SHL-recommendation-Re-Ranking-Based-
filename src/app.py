@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, AnyUrl
 from typing import Optional, List
-from src.recommender import Recommender
+from recommender import Recommender
 
 # Create app and add CORS middleware immediately
 app = FastAPI(title="SHL Assessment Recommender")

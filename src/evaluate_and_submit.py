@@ -7,8 +7,8 @@ import json, os, re
 import numpy as np
 import pandas as pd
 from collections import defaultdict
-from src.config import DATASET_PATH
-from src.recommender import Recommender
+from config import DATASET_PATH
+from recommender import Recommender
 from sentence_transformers import SentenceTransformer
 
 # helpers

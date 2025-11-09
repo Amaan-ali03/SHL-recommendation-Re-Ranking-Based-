@@ -1,5 +1,5 @@
 import pandas as pd
-from src.config import DATASET_PATH
+from config import DATASET_PATH
 
 def main():
     train = pd.read_excel(DATASET_PATH, sheet_name="Train-Set")

@@ -9,7 +9,7 @@ import time, json, os, re
 from urllib.parse import urljoin, urlparse, urlunparse
 import requests
 from bs4 import BeautifulSoup
-from src.config import CATALOG_URL, BASE
+from config import CATALOG_URL, BASE
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; SHL-Catalog-Crawler/1.2)"}
 

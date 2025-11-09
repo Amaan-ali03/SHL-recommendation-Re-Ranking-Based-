@@ -5,7 +5,7 @@ Run: uvicorn src.app:app --reload
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, AnyUrl
 from typing import Optional, List
-from src.recommender import Recommender
+from recommender import Recommender
 
 app = FastAPI(title="SHL Assessment Recommender")
 
