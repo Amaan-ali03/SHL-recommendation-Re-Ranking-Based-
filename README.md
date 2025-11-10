@@ -1,4 +1,4 @@
-SHL Assessment Recommendation System
+🚀 SHL Assessment Recommendation System
 Re-Ranking Based Generative AI Project
 Author: Amaan Ali
 Institution: Indian Institute of Technology (IIT) Patna
@@ -92,11 +92,11 @@ Models	Sentence-Transformers (Bi-Encoder), Cross-Encoder (MS MARCO)
 Libraries	RapidFuzz, NumPy, Pandas, BeautifulSoup, httpx
 Frontend	HTML + JavaScript (Netlify)
 Hosting	Hugging Face Spaces (backend), Netlify (frontend)
-Author
+👨‍💻 Author
 Amaan Ali
 B.Tech, Indian Institute of Technology (IIT) Patna
-amaanali0312@gmail.com
-Summary
+📧 amaanali0312@gmail.com
+🧾 Summary
 This project demonstrates how semantic retrieval and re-ranking can enhance candidate assessment recommendations for recruiters.
 By combining transformer embeddings with contextual and lexical cues, the system achieved a 50% boost in accuracy — while remaining lightweight enough to run efficiently on CPU.
 It is fully functional, deployed, and ready for end-to-end testing.
