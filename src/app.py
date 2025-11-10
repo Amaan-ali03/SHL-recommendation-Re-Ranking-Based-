@@ -2,12 +2,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, AnyUrl
 from typing import Optional, List
-from recommender import Recommender
+from src.recommender import Recommender
 
-# Create app and add CORS middleware immediately
 app = FastAPI(title="SHL Assessment Recommender")
 
-# Allow local frontend origins; update this for deployment.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://127.0.0.1:3000", "http://localhost:3000"],
@@ -40,7 +38,7 @@ def load_rec():
 
 @app.get("/health")
 def health():
-    return {"status":"ok"}
+    return {"status":"healthy"}
 
 @app.post("/recommend", response_model=RecommendResponse)
 def recommend(body: RecommendRequest):

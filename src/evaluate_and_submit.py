@@ -82,7 +82,6 @@ for _, r in train_df.iterrows():
     mapped = map_gold(url_or_name)
     gold_map[q].append(mapped)
 
-# recommender instances
 rec = Recommender()
 baseline_encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
@@ -126,7 +125,6 @@ def mean_recall_at_k(pred_map, gold_map, k=10):
         recalls.append(hits / max(1, len(golds)))
     return float(np.mean(recalls)) if recalls else 0.0
 
-# Evaluate
 queries = list(gold_map.keys())
 preds_base = {}
 preds_imp = {}

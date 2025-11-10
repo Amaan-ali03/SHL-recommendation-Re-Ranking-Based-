@@ -18,7 +18,6 @@ import numpy as np
 import httpx
 from sentence_transformers import SentenceTransformer
 from rapidfuzz import fuzz
-# Try to import CrossEncoder (not always installable on all systems)
 import importlib
 CrossEncoder = None
 CROSS_AVAILABLE = False
@@ -144,7 +143,6 @@ class Recommender:
         if not query:
             raise ValueError("Provide a query or jd_url")
 
-        # Query embedding (normalized if model supports normalize_embeddings)
         q_emb = self.bi.encode([query], normalize_embeddings=True)[0]
 
         # similarity with catalog embeddings (assumes self.emb is normalized)
@@ -158,12 +156,11 @@ class Recommender:
         # Prepare query token set for lexical checks (keep tokens like 'c++' and 'c#')
         q_tokens = set(re.findall(r'(?:c\+\+|c#|[A-Za-z0-9_#+\-]+)', (query or "").lower()))
 
-        # language tokens (extendable)
         lang_tokens = ['python', 'java', 'c++', 'c#', 'c', 'javascript', 'js', 'r', 'sql', 'react', 'node']
         role_tokens = ['developer', 'engineer', 'programmer']
 
         for i in idxs:
-            it = dict(self.items[i])  # shallow copy of item dict
+            it = dict(self.items[i])
             it["_sim"] = float(sims[i])  # cosine similarity (if embeddings normalized)
 
             # safer fuzzy/name matching using token_set_ratio
@@ -216,7 +213,6 @@ class Recommender:
 
             cands.append(it)
 
-        # Reranking if cross-encoder is available
         if self.reranker is not None and len(cands) > 0:
             pairs = [(query, c["_embed_text"]) for c in cands]
             try:
